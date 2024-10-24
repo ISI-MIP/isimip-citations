@@ -21,3 +21,8 @@ Usage
 # fetches citations for selected DOI from data.isimip.org
 ./fetch_citations.py https://doi.org/10.5880/PIK.2019.023 https://doi.org/10.48364/ISIMIP.342217 
 ```
+
+```bash
+# create markdown file from the output of fetch_citations.py
+./format_citations.py
+```
