@@ -34,7 +34,7 @@ def main():
 
     output_resources = []
     for resource in resources:
-        if (args.doi and resource['doi'] in args.doi) or (not args.all and resource.get('new_version')):
+        if (args.doi and resource['doi'] not in args.doi) or (not args.all and resource.get('new_version')):
             continue
 
         versions = get_versions(resources, resource)

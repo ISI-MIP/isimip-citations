@@ -1,5 +1,5 @@
-isimip-logs
-===========
+isimip-citations
+================
 
 Setup
 -----
