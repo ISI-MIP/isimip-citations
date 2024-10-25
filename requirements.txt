@@ -1,3 +1,4 @@
 Jinja2
+pypandoc
 requests
 structlog

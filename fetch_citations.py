@@ -49,19 +49,27 @@ def main():
         for doi in resource_citation_dois:
             if doi not in metadata:
                 metadata[doi] = fetch_crossref_metadata(doi)
-            resource_citations.append(metadata[doi])
+            if metadata[doi]:
+                resource_citations.append(metadata[doi])
 
-        output_resources.append({
-            'doi': resource['doi'],
-            'doi_url': resource.get('doi_url'),
-            'creators_str': resource.get('creators_str'),
-            'title': resource.get('title'),
-            'publication_date': resource.get('publication_date'),
-            'publication_year': resource.get('publication_year'),
-            'publisher': resource.get('publisher'),
-            'citation': resource.get('citation'),
-            'citations': resource_citations
-        })
+        output_resource = {
+            key: resource[key] for key in resource if key in [
+                'doi',
+                'doi_url',
+                'creators_str',
+                'title',
+                'title_with_version',
+                'publication_date',
+                'publication_year',
+                'publisher',
+                'citation'
+            ]
+        }
+
+        output_resource['citations'] = sorted(resource_citations, key=lambda c: c['publication_date'], reverse=True)
+        output_resource['citations_count'] = len(resource_citations)
+
+        output_resources.append(output_resource)
 
     args.output_path.parent.mkdir(exist_ok=True, parents=True)
     with open(args.output_path, 'w') as fp:
@@ -82,11 +90,9 @@ def fetch_resources(url):
 def get_versions(resources, resource, versions=[]):
     previous_version = resource.get('previous_version')
     if previous_version:
-        try:
-            previous_resource = next(r for r in resources if r['doi'] == previous_version)
+        previous_resource = next(iter(r for r in resources if r['doi'] == previous_version), None)
+        if previous_resource:
             return [resource['doi'], *get_versions(resources, previous_resource, versions)]
-        except StopIteration:
-            pass
 
     return [resource['doi']]
 
@@ -137,6 +143,7 @@ def fetch_crossref_metadata(doi):
         for author in crossref_data.get('author', [])
     ])
     title = crossref_data.get('title')[0]
+    journal = next(iter(crossref_data.get('container-title')), None)
     publisher = crossref_data.get('publisher')
 
     return {
@@ -146,6 +153,7 @@ def fetch_crossref_metadata(doi):
         'title': title,
         'publication_date': publication_date,
         'publication_year': publication_year,
+        'journal': journal,
         'publisher': publisher,
         'citation': f'{creators_str} ({publication_year}): {title}. {publisher}. {doi_url}'
     }

@@ -3,6 +3,7 @@ import argparse
 import json
 from pathlib import Path
 
+import pypandoc
 import structlog
 from jinja2 import Template
 
@@ -19,30 +20,43 @@ def main():
     with open(args.input_file) as fp:
         resources = json.load(fp)
 
-    resources = [
-        dict(**resource, count=len(resource['citations']))
-        for resource in resources if len(resource['citations']) > 0
-    ]
+    resources = sorted([
+        resource for resource in resources if resource['citations_count'] > 0
+    ], key=lambda r: r['citations_count'], reverse=True)
 
-    resources = sorted(resources, key=lambda r: r['count'], reverse=True)
+    rendered_template = Template(markdown_template).render(resources=resources)
 
     if args.output_path.suffix == '.md':
-        args.output_path.write_text(Template(markdown_template).render(resources=resources).strip())
+        args.output_path.write_text(rendered_template)
+    elif args.output_path.suffix == '.pdf':
+        pypandoc.convert_text(
+            pandoc_template + rendered_template,
+            'pdf',
+            format='markdown',
+            outputfile=args.output_path,
+            extra_args=['--pdf-engine=xelatex']
+        )
 
+markdown_template = '''# ISIMIP data citations
+{% for resource in resources %}
+## {{ resource.title_with_version }}
 
-markdown_template = '''
-# ISIMIP citations
+DOI: <{{ resource.doi_url }}>
 
-{% for resource in resources %}## {{ resource.title }}
+Citations: {{ resource.citations_count }}
 
-DOI: {{ resource.doi }}
-
-Citations: {{ resource.count }}
-
-{% for citation in resource.citations %}* {{ citation.citation }}
+{% for citation in resource.citations %}* {{ citation.creators_str }} ({{ citation.publication_year }}): **{{ citation.title }}**. {% if citation.journal %}{{ citation.journal }}{% else %}{{ citation.publisher }}{% endif %}. <{{ citation.doi_url}}>
 {% endfor %}
 {% endfor %}
+'''  # noqa: E501
 
+pandoc_template = '''
+---
+geometry: margin=1in
+colored-links: true
+linkcolor: blue
+urlcolor: orange
+...
 '''
 
 if __name__ == '__main__':
