@@ -14,3 +14,6 @@ __pycache__/
 *.json
 *.pdf
 *.md
+
+!template.md
+!legacy.json

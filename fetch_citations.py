@@ -30,7 +30,12 @@ def main():
 
     args = parser.parse_args()
 
+    # fetch DOI from data.isimip.org
     resources = fetch_resources(resources_url)
+
+    # load old DOI from json file
+    with open('legacy.json') as fp:
+        resources += json.load(fp)
 
     output_resources = []
     for resource in resources:
